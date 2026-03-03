@@ -25,6 +25,7 @@ export interface PackMeta {
   description?: string;
   tags?: string[];
   trustTier: string;
+  quality?: "gold" | "silver" | "flagged" | "unreviewed";
   franchise: FranchiseInfo;
   categories: CategoryData[];
   categoryNames: string[];

@@ -135,6 +135,7 @@ interface RegistryEntry {
   source_path: string;
   trust_tier?: string;
   tags?: string[];
+  quality?: "gold" | "silver" | "flagged" | "unreviewed";
 }
 
 interface PackData {
@@ -148,6 +149,7 @@ interface PackData {
   description?: string;
   tags?: string[];
   trustTier: string;
+  quality?: "gold" | "silver" | "flagged" | "unreviewed";
   franchise: Franchise;
   categories: { name: string; sounds: { file: string; label: string; audioUrl: string }[] }[];
   categoryNames: string[];
@@ -175,7 +177,7 @@ const REGISTRY_INDEX_URL =
 // ── Helpers ─────────────────────────────────────────────────────────────────
 // audioBase should be the URL of the directory containing sounds/
 // e.g. "https://raw.../og-packs/v1.0.0/peon" or "https://raw.../mypack/v1.0.0"
-function processManifest(manifest: Manifest, packName: string, audioBase: string, trustTier: string = "community", registryTags?: string[], sourceRepo?: string, sourcePath?: string): PackData {
+function processManifest(manifest: Manifest, packName: string, audioBase: string, trustTier: string = "community", registryTags?: string[], sourceRepo?: string, sourcePath?: string, quality?: "gold" | "silver" | "flagged" | "unreviewed"): PackData {
   const categories: PackData["categories"] = [];
   const previewSounds: PackData["previewSounds"] = [];
   let soundCount = 0;
@@ -211,6 +213,7 @@ function processManifest(manifest: Manifest, packName: string, audioBase: string
     description: manifest.description,
     tags: manifest.tags?.length ? manifest.tags : (registryTags || undefined),
     trustTier,
+    quality,
     franchise: FRANCHISE_MAP[packName] || { name: "Unknown", url: "" },
     categories,
     categoryNames: categories.map((c) => c.name),
@@ -269,8 +272,9 @@ async function generateFromRemote(): Promise<PackData[]> {
 
   const packs: PackData[] = [];
 
-  // Fetch manifests in parallel (batches of 10)
-  const entries = index.packs;
+  // Filter out flagged packs (they have quality issues that need fixing)
+  const entries = index.packs.filter((e) => e.quality !== "flagged");
+  console.log(`[generate] Filtered to ${entries.length} packs (excluding ${index.packs.length - entries.length} flagged)`);
   const batchSize = 10;
 
   for (let i = 0; i < entries.length; i += batchSize) {
@@ -298,7 +302,7 @@ async function generateFromRemote(): Promise<PackData[]> {
           ? `${rawBase}/${entry.source_path}`
           : rawBase;
 
-        return processManifest(manifest, packName, audioBase, entry.trust_tier || "community", entry.tags, entry.source_repo, entry.source_path || undefined);
+        return processManifest(manifest, packName, audioBase, entry.trust_tier || "community", entry.tags, entry.source_repo, entry.source_path || undefined, entry.quality);
       })
     );
 
