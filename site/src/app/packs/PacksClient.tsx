@@ -1,36 +1,14 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, startTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getAllPacks, getGeneratedAt } from "@/lib/packs";
+import type { PackMeta } from "@/lib/types";
+import { LANGUAGE_LABELS } from "@/lib/constants";
 import { PackCard } from "@/components/ui/PackCard";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-
-const LANGUAGE_LABELS: Record<string, string> = {
-  en: "English",
-  es: "Spanish",
-  fr: "French",
-  de: "German",
-  ru: "Russian",
-  cs: "Czech",
-  pl: "Polish",
-  el: "Greek",
-  pt: "Portuguese",
-  zh: "Chinese",
-  ja: "Japanese",
-  ko: "Korean",
-  it: "Italian",
-  nl: "Dutch",
-  sv: "Swedish",
-  da: "Danish",
-  fi: "Finnish",
-  no: "Norwegian",
-  tr: "Turkish",
-  ar: "Arabic",
-};
 
 const PACKS_PER_PAGE = 24;
 
@@ -47,7 +25,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function sortPacks(packs: ReturnType<typeof getAllPacks>, key: SortKey) {
+function sortPacks(packs: PackMeta[], key: SortKey) {
   const sorted = [...packs];
   switch (key) {
     case "name-asc":
@@ -79,9 +57,7 @@ function sortPacks(packs: ReturnType<typeof getAllPacks>, key: SortKey) {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function PacksClient() {
-  const allPacks = getAllPacks();
-  const generatedAt = getGeneratedAt();
+export function PacksClient({ packs: allPacks }: { packs: PackMeta[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,7 +70,7 @@ export function PacksClient() {
     searchParams.get("lang") || null
   );
   const [sortKey, setSortKey] = useState<SortKey>(
-    (searchParams.get("sort") as SortKey) || "name-asc"
+    (searchParams.get("sort") as SortKey) || "date-desc"
   );
   const [page, setPage] = useState(
     Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1)
@@ -113,7 +89,7 @@ export function PacksClient() {
         }
       }
       // Clean defaults
-      if (params.get("sort") === "name-asc") params.delete("sort");
+      if (params.get("sort") === "date-desc") params.delete("sort");
       if (params.get("page") === "1") params.delete("page");
       const qs = params.toString();
       router.replace(qs ? `?${qs}` : "/packs", { scroll: false });
@@ -153,7 +129,7 @@ export function PacksClient() {
     (sort: SortKey) => {
       setSortKey(sort);
       setPage(1);
-      updateUrl({ sort: sort === "name-asc" ? null : sort, page: null });
+      updateUrl({ sort: sort === "date-desc" ? null : sort, page: null });
     },
     [updateUrl]
   );
@@ -237,7 +213,7 @@ export function PacksClient() {
   // Reset page if it exceeds total after filter change
   useEffect(() => {
     if (page > totalPages) {
-      setPage(totalPages);
+      startTransition(() => setPage(totalPages));
     }
   }, [page, totalPages]);
 
@@ -347,8 +323,8 @@ export function PacksClient() {
           {filtered.length} packs
         </p>
         <p>
-          Last updated{" "}
-          {new Date(generatedAt).toLocaleDateString("en-US", {
+          Updated{" "}
+          {new Date().toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",

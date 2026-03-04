@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
@@ -22,7 +23,7 @@ export function Header() {
           href="/"
           className="flex items-center gap-2 font-display text-xl text-text-primary hover:text-gold transition-colors"
         >
-          <img src="/peon-logo.jpeg" alt="OpenPeon" className="w-8 h-8 rounded-full" />
+          <Image src="/peon-logo.jpeg" alt="OpenPeon" width={32} height={32} unoptimized className="w-8 h-8 rounded-full" />
           OpenPeon
         </Link>
 

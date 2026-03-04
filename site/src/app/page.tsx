@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { getAllPacks } from "@/lib/packs";
+import Image from "next/image";
+import { fetchAllPacks } from "@/lib/registry";
 import { CESP_CATEGORIES } from "@/lib/categories";
 import { PackCard } from "@/components/ui/PackCard";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 
 const TIER_ORDER: Record<string, number> = { official: 0, verified: 1, community: 2 };
 
-export default function HomePage() {
-  const allPacks = getAllPacks();
+export default async function HomePage() {
+  const allPacks = await fetchAllPacks();
   const featured = [...allPacks]
     .sort((a, b) => {
       const ta = TIER_ORDER[a.trustTier] ?? 9;
@@ -24,7 +25,7 @@ export default function HomePage() {
         <div className="absolute inset-0 -z-10 flex items-center justify-center">
           <div className="w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,171,1,0.08)_0%,transparent_70%)] blur-3xl" />
         </div>
-        <img src="/peon-logo.jpeg" alt="OpenPeon" className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-6 shadow-lg shadow-gold/20" />
+        <Image src="/peon-logo.jpeg" alt="OpenPeon" width={128} height={128} unoptimized className="w-24 h-24 md:w-32 md:h-32 rounded-full mx-auto mb-6 shadow-lg shadow-gold/20" />
         <h1 className="font-display text-5xl md:text-6xl text-text-primary mb-4">
           OpenPeon
         </h1>

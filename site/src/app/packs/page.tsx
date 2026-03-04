@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { fetchAllPacks } from "@/lib/registry";
 import { PacksClient } from "./PacksClient";
 
 export const metadata: Metadata = {
@@ -8,10 +9,12 @@ export const metadata: Metadata = {
     "Browse CESP-compatible sound packs for Claude Code, Cursor, Codex, and any agentic IDE.",
 };
 
-export default function PacksPage() {
+export default async function PacksPage() {
+  const packs = await fetchAllPacks();
+
   return (
     <Suspense>
-      <PacksClient />
+      <PacksClient packs={packs} />
     </Suspense>
   );
 }

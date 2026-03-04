@@ -41,5 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 # generated data
-/src/data/packs-data.json
+/src/data/
 /public/audio/

@@ -6,10 +6,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "generate": "tsx scripts/generate-pack-data.ts",
-    "predev": "tsx scripts/generate-pack-data.ts",
     "dev": "next dev",
-    "prebuild": "tsx scripts/generate-pack-data.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -17,8 +14,8 @@
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
     "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -27,9 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "glob": "^13.0.3",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

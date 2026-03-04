@@ -1,16 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getAllPacks, getPack, getPackNames } from "@/lib/packs";
+import { fetchAllPacks } from "@/lib/registry";
 import { CESP_CATEGORIES } from "@/lib/categories";
 import { CategoryBadge } from "@/components/ui/CategoryBadge";
 import { CodeBlock } from "@/components/ui/CodeBlock";
 import { PackSounds } from "./PackSounds";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { GitHubIcon } from "@/components/ui/GitHubIcon";
 import { PackCard } from "@/components/ui/PackCard";
 
-export function generateStaticParams() {
-  return getPackNames().map((name) => ({ name }));
+export const dynamicParams = true;
+export const revalidate = 1800;
+
+export async function generateStaticParams() {
+  const packs = await fetchAllPacks();
+  return packs.map((p) => ({ name: p.name }));
 }
 
 export async function generateMetadata({
@@ -19,11 +24,12 @@ export async function generateMetadata({
   params: Promise<{ name: string }>;
 }): Promise<Metadata> {
   const { name } = await params;
-  const pack = getPack(name);
+  const packs = await fetchAllPacks();
+  const pack = packs.find((p) => p.name === name);
   if (!pack) return { title: "Pack Not Found" };
   return {
     title: `${pack.displayName}`,
-    description: `${pack.displayName} — ${pack.totalSoundCount} sounds across ${pack.categoryNames.length} categories. ${pack.franchise.name} sound pack for CESP.`,
+    description: `${pack.displayName} — ${pack.totalSoundCount} sounds across ${pack.categoryNames.length} categories.${pack.franchise.name !== "Unknown" ? ` ${pack.franchise.name} sound pack for PeonPing and other CESP-compatible players.` : " Sound pack for CESP."}`,
   };
 }
 
@@ -33,11 +39,10 @@ export default async function PackDetailPage({
   params: Promise<{ name: string }>;
 }) {
   const { name } = await params;
-  const pack = getPack(name);
-  if (!pack) notFound();
-
-  const allPacks = getAllPacks();
+  const allPacks = await fetchAllPacks();
   const idx = allPacks.findIndex((p) => p.name === name);
+  const pack = allPacks[idx];
+  if (!pack) notFound();
   const prev = idx > 0 ? allPacks[idx - 1] : null;
   const next = idx < allPacks.length - 1 ? allPacks[idx + 1] : null;
 
@@ -52,7 +57,7 @@ export default async function PackDetailPage({
             name: pack.displayName,
             applicationCategory: "DeveloperApplication",
             operatingSystem: "Any",
-            description: `${pack.displayName} — ${pack.totalSoundCount} sounds across ${pack.categoryNames.length} categories. ${pack.franchise.name} sound pack for CESP.`,
+            description: `${pack.displayName} — ${pack.totalSoundCount} sounds across ${pack.categoryNames.length} categories.${pack.franchise.name !== "Unknown" ? ` ${pack.franchise.name} sound pack for PeonPing and other CESP-compatible players.` : " Sound pack for CESP."}`,
             author: {
               "@type": "Person",
               name: pack.author.name || pack.author.github,
@@ -76,15 +81,23 @@ export default async function PackDetailPage({
           {pack.displayName}
         </h1>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <a
-            href={pack.franchise.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-text-muted hover:text-gold transition-colors"
-          >
-            {pack.franchise.name}
-          </a>
-          <span className="text-text-dim">·</span>
+          {pack.franchise.name !== "Unknown" && (
+            <>
+              {pack.franchise.url ? (
+                <a
+                  href={pack.franchise.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-muted hover:text-gold transition-colors"
+                >
+                  {pack.franchise.name}
+                </a>
+              ) : (
+                <span className="text-text-muted">{pack.franchise.name}</span>
+              )}
+              <span className="text-text-dim">·</span>
+            </>
+          )}
           <span className="text-text-dim">
             Added by{" "}
             <a
@@ -127,8 +140,9 @@ export default async function PackDetailPage({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs text-text-dim hover:text-gold transition-colors font-mono"
           >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            {pack.sourceRepo}{pack.sourcePath ? `/${pack.sourcePath}` : ""}
+            <GitHubIcon className="w-3.5 h-3.5" />
+            {pack.sourceRepo}
+            {pack.sourcePath ? `/${pack.sourcePath}` : ""}
           </a>
         </div>
       )}
@@ -148,7 +162,11 @@ export default async function PackDetailPage({
                 )}
               </div>
               <ErrorBoundary>
-                <PackSounds sounds={cat.sounds} packName={pack.name} categoryName={cat.name} />
+                <PackSounds
+                  sounds={cat.sounds}
+                  packName={pack.name}
+                  categoryName={cat.name}
+                />
               </ErrorBoundary>
             </section>
           );
@@ -160,10 +178,7 @@ export default async function PackDetailPage({
         <h2 className="font-display text-xl text-text-primary mb-4">
           Use this pack
         </h2>
-        <CodeBlock
-          code={`peon packs use ${pack.name}`}
-          language="bash"
-        />
+        <CodeBlock code={`peon packs use ${pack.name}`} language="bash" />
         <p className="text-xs text-text-dim mt-2">
           Requires{" "}
           <a
@@ -186,7 +201,9 @@ export default async function PackDetailPage({
             let score = 0;
             if (p.franchise.name === pack.franchise.name) score += 3;
             if (p.language === pack.language) score += 1;
-            const sharedTags = (p.tags || []).filter((t) => (pack.tags || []).includes(t));
+            const sharedTags = (p.tags || []).filter((t) =>
+              (pack.tags || []).includes(t),
+            );
             score += sharedTags.length;
             return { pack: p, score };
           })
