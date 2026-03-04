@@ -1,10 +1,8 @@
 import type { MetadataRoute } from "next";
-import { getAllPacks } from "@/lib/packs";
+import { fetchAllPacks } from "@/lib/registry";
 
-export const dynamic = "force-static";
-
-export default function sitemap(): MetadataRoute.Sitemap {
-  const packs = getAllPacks();
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const packs = await fetchAllPacks();
 
   const packPages = packs.map((pack) => ({
     url: `https://openpeon.com/packs/${pack.name}`,

@@ -313,7 +313,11 @@ function CategoryCard({
 // ── Main component ───────────────────────────────────────────────────────────
 
 export function PreviewClient() {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() =>
+    typeof window !== "undefined" && window.location.hash
+      ? decodeURIComponent(window.location.hash.slice(1))
+      : ""
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [manifest, setManifest] = useState<PackManifest | null>(null);
@@ -494,12 +498,11 @@ export function PreviewClient() {
     setLoading(false);
   }, []);
 
-  // Load from URL hash
+  // Load from URL hash on mount
   useEffect(() => {
     if (window.location.hash) {
       const repo = decodeURIComponent(window.location.hash.slice(1));
-      setInput(repo);
-      loadPack(repo);
+      requestAnimationFrame(() => loadPack(repo));
     }
   }, [loadPack]);
 

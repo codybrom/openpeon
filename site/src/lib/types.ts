@@ -36,8 +36,3 @@ export interface PackMeta {
   dateAdded?: string;
   dateUpdated?: string;
 }
-
-export interface PacksData {
-  generatedAt: string;
-  packs: PackMeta[];
-}
